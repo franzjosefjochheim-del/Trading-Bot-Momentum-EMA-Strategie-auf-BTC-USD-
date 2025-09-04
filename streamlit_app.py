@@ -13,12 +13,11 @@ import strategy
 st.set_page_config(page_title="BTC Momentum Bot", layout="wide")
 st.title("BTC/USD Momentum Bot – Dashboard")
 
-# Auto-Refresh (optional)
+# Sidebar: manueller Refresh
 with st.sidebar:
     st.markdown("### Ansicht")
-    refresh_sec = st.slider("Auto-Refresh (Sek.)", 0, 120, 30, help="0 = kein Auto-Refresh")
-    if refresh_sec > 0:
-        st.autorefresh(interval=refresh_sec * 1000, key="autorefresh")
+    if st.button("Aktualisieren"):
+        st.rerun()
 
 # ---------------------------
 # Alpaca API-Client
@@ -61,7 +60,7 @@ def load_bars(symbol: str, limit: int):
     df = api.get_crypto_bars([symbol], config.TIMEFRAME, limit=limit).df
     if isinstance(df.index, pd.MultiIndex):
         df = df.loc[(symbol, ), :]
-    # Sicherheit: numerische Spalten
+    # numerische Spalten absichern
     for c in ("open", "high", "low", "close", "volume", "vwap"):
         if c in df.columns:
             df[c] = pd.to_numeric(df[c], errors="coerce")
@@ -116,21 +115,13 @@ else:
 # ---------------------------
 st.subheader("Aktuelles Signal")
 
-# Bars für Signal + Chart laden
 df = load_bars(config.SYMBOL, limit=config.EMA_SLOW + 3)
 if df.empty:
     st.warning("Keine Marktdaten empfangen.")
 else:
-    # Signal berechnen
-    # Für strategy.generate_signal erwartet: DataFrame mit 'close'
-    # Wir reichen hier das MultiIndex-bereinigte df direkt weiter.
-    # strategy.generate_signal greift intern auf config.SYMBOL zurück.
-    # Falls deine strategy.generate_signal eine Bars-Liste erwartet:
-    # passe ggf. dort an; aktuell verarbeitet sie DataFrames.
     sig = strategy.generate_signal(df)
     st.write(sig)
 
-    # Mini-Chart: Close + EMA20/EMA50
     closes = df["close"].astype(float)
     ema_fast = closes.ewm(span=config.EMA_FAST, adjust=False).mean()
     ema_slow = closes.ewm(span=config.EMA_SLOW, adjust=False).mean()
