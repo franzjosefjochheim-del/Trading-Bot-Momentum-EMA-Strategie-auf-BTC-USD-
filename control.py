@@ -1,7 +1,7 @@
 # control.py
 import json, os, threading
 LOCK = threading.Lock()
-FLAG = "bot_state.json"  # liegt im Arbeitsverzeichnis (shared für Web & Worker)
+FLAG = "bot_state.json"  # im Arbeitsverzeichnis (shared für Web & Worker)
 
 def _read():
     if not os.path.exists(FLAG):
